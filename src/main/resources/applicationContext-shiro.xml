@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop.xsd">
+    <!--
+            Shiro 授权使用AOP 切面编程的理念
+        -->
+    <aop:aspectj-autoproxy proxy-target-class="true"/>
+    <bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+       <property name="securityManager" ref="securityManager"/>
+    </bean>
+
+
+
+    <!--4.凭证：（密码的加密方式）-->
+      <bean id="credentialsMatcher" class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+          <!--加密方式-->
+          <property name="hashAlgorithmName" value="MD5"/>
+          <!--加密次数-->
+          <property name="hashIterations" value="3"/>
+      </bean>
+
+       <!--3.自定义认证与授权的管理对象
+           自定义的类：必须继承 AuthorizingRealm
+       -->
+      <bean id="realm" class="com.zyj.realm.CustomRealm">
+         <!--设置认证的凭证
+           （密码的加密方式）
+          -->
+         <property name="credentialsMatcher" ref="credentialsMatcher"/>
+      </bean>
+      <!--
+          2.创建核心管理器：
+              SecurityManager
+      -->
+      <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+          <!-- 添加自定义的认证与授权的管理对象-->
+          <property name="realm" ref="realm"/>
+      </bean>
+      <!--1.shiroFilter
+           shiroFilter:此名字要与web.xml中的filt-name统一
+      -->
+      <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+          <!--核心管理器-->
+          <property name="securityManager" ref="securityManager"/>
+          <!--需要认证的请求，需要访问的url -->
+          <property name="loginUrl" value="/login"/>
+          <!--
+              认证成功之后，跳转的请求（路径与请求）
+              注意：一般是不设置的，不设置会自动访问上一个请求
+          -->
+          <!--<property name="successUrl" value=""/>-->
+
+          <!--当前案例的需求：
+              当登录成功之后跳转到主界面，显示所有的功能菜单
+          -->
+          <property name="successUrl" value="/selallgn"/>
+          <!--无权限时，访问的url（此设置经常无效）-->
+          <property name="unauthorizedUrl" value="/refuse.jsp"/>
+          <!--设置权限过滤形式-->
+          <property name="filterChainDefinitions">
+              <value>
+                  <!--设置首页面可以匿名访问-->
+                  / = anon
+                  /reg.jsp = anon
+                  /reg = anon
+                  /login.jsp = anon
+                  <!--退出-->
+                  /logout = logout
+                  <!--设置所有的请求都需要认证-->
+                  /** = authc
+              </value>
+          </property>
+      </bean>
+
+</beans>
